@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Future Value Calculator (Annuity Due)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    .input-group {
+      margin: 15px 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #result {
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: right;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    td.words {
+      text-align: left;
+      font-size: 0.9em;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h2>SIP Calculator</h2>
+<h3>by</h3>
+  <h2>Sarwar Imam Khan</h2>
+  <form id="fvForm">
+    <div class="input-group">
+      <label for="monthlyAmount">Monthly Amount (₹):</label>
+      <input type="number" id="monthlyAmount" step="0.01" required>
+    </div>
+    <div class="input-group">
+      <label for="interestRate">Annual Interest Rate (%):</label>
+      <input type="number" id="interestRate" step="0.01" value="12" required>
+    </div>
+    <button type="button" onclick="calculateFutureValue()">Calculate</button>
+  </form>
+  <div id="result"></div>
+
+  <script>
+    // Format a number with Indian digit grouping (1,23,456)
+    function formatIndianNumber(x) {
+      x = Math.round(x);
+      let parts = x.toString().split('.');
+      let num = parts[0];
+      let lastThree = num.substring(num.length - 3);
+      let otherNumbers = num.substring(0, num.length - 3);
+      if (otherNumbers !== '') {
+        lastThree = ',' + lastThree;
+      }
+      let result = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
+      return result;
+    }
+
+    // Convert numbers below 100 into words
+    function convertBelowHundred(num) {
+      const belowTwenty = [
+        'Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+        'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+        'Seventeen', 'Eighteen', 'Nineteen'
+      ];
+      const tens = [
+        '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
+      ];
+
+      if (num < 20) {
+        return belowTwenty[num];
+      } else {
+        const tenVal = Math.floor(num / 10);
+        const unitVal = num % 10;
+        return tens[tenVal] + (unitVal ? ' ' + belowTwenty[unitVal] : '');
+      }
+    }
+
+    // Convert an integer number into Indian currency words (Crore, Lakh, Thousand, Hundred)
+    function numberToIndianWords(num) {
+      if (num === 0) return 'Zero Rupees';
+
+      let words = '';
+
+      // Handle Crores
+      const crore = Math.floor(num / 10000000);
+      num = num % 10000000;
+      if (crore > 0) {
+        words += convertBelowHundred(crore) + ' Crore ';
+      }
+
+      // Handle Lakhs
+      const lakh = Math.floor(num / 100000);
+      num = num % 100000;
+      if (lakh > 0) {
+        words += convertBelowHundred(lakh) + ' Lakh ';
+      }
+
+      // Handle Thousands
+      const thousand = Math.floor(num / 1000);
+      num = num % 1000;
+      if (thousand > 0) {
+        words += convertBelowHundred(thousand) + ' Thousand ';
+      }
+
+      // Handle Hundreds
+      const hundred = Math.floor(num / 100);
+      num = num % 100;
+      if (hundred > 0) {
+        words += convertBelowHundred(hundred) + ' Hundred ';
+      }
+
+      // Handle the remainder (below 100)
+      if (num > 0) {
+        if (words !== '') {
+          words += 'and ';
+        }
+        words += convertBelowHundred(num) + ' ';
+      }
+
+      return words.trim() + ' Rupees';
+    }
+
+    function calculateFutureValue() {
+      // Get input values
+      const monthlyAmount = parseFloat(document.getElementById('monthlyAmount').value);
+      const annualRate = parseFloat(document.getElementById('interestRate').value) / 100;
+
+      // Validate inputs
+      if (isNaN(monthlyAmount) || isNaN(annualRate) || 
+          monthlyAmount <= 0 || annualRate < 0) {
+        document.getElementById('result').innerHTML =
+          "Please enter valid positive numbers";
+        return;
+      }
+
+      // Calculate monthly interest rate
+      const monthlyRate = annualRate / 12;
+
+      // Define the years we want to calculate
+      const years = [1, 5, 10, 20, 30, 40, 50, 75, 100];
+
+      // Create table structure
+      let html = '<table><tr><th>Year</th><th>Future Value (₹)</th><th>Amount in Words</th></tr>';
+
+      // Calculate future value for each year (annuity due)
+      years.forEach(year => {
+        const totalPeriods = year * 12;
+        const futureValue = monthlyAmount * (
+          ((Math.pow(1 + monthlyRate, totalPeriods) - 1) / monthlyRate) * 
+          (1 + monthlyRate)
+        );
+        const roundedFV = Math.round(futureValue);
+
+        html += `<tr>
+                   <td>${year}</td>
+                   <td>₹${formatIndianNumber(futureValue)}</td>
+                   <td class="words">${numberToIndianWords(roundedFV)}</td>
+                 </tr>`;
+      });
+
+      html += '</table>';
+      document.getElementById('result').innerHTML = html;
+    }
+  </script>
+</body>
+</html>
